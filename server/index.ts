@@ -14,35 +14,38 @@ app.use(express.json());
 
 const payload = {
   bot_profile: "voice_2024_10",
-  max_duration: 1800,
+  max_duration: 300,
   api_keys: {
+    gemini: process.env.GOOGLE_API_KEY,
   },
   services: {
     stt: "deepgram",
-    llm: "together",
-    tts: "cartesia",
+    llm: "gemini",
+    tts: "elevenlabs",
   },
   config: [
     {
-      service: "tts",
+      service: "vad",
       options: [
-        { name: "voice", value: "79a125e8-cd45-4c13-8a67-188112f4dd22" }
+        { name: "params", value: { stop_secs: 0.7 } }
       ]
     },
     {
       service: "llm",
       options: [
-        { name: "model", value: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo" },
+        { name: "model", value: "gemini-1.5-flash-latest" },
         {
-          name: "messages",
+          name: "initial_messages",
           value: [
             {
               role: "system",
               content:
-                "You are a assistant called ExampleBot. You can ask me anything. Keep responses brief and legible. Your responses will be converted to audio, so please avoid using any special characters except '!' or '?'.",
-            }
+                "You are a helpful assistant. Your name is ExampleBot. Keep responses brief and legible. Your responses will be converted to audio, so avoid using special characters or formatting. Please do use normal punctuation at the end of a sentence.",
+            },
+            { role: "user", content: "Hello, ExampleBot!" },
           ]
-        }
+        },
+        { name: "run_on_config", value: true },
       ]
     }
   ]
@@ -50,7 +53,7 @@ const payload = {
 
 app.post('/api/connect', async (req, res) => {
   try {
-    console.log('POST /api/connect', process.env.DAILY_BOTS_KEY);
+    console.log('POST /api/connect', payload);
     
     const response = await fetch("https://api.daily.co/v1/bots/start", {
       method: "POST",

@@ -1,5 +1,6 @@
 import { RTVIEvent, RTVIMessage, RTVIClient, Participant, TranscriptData, BotTTSTextData, PipecatMetricData, BotLLMTextData } from "realtime-ai";
 
+let joinButton: HTMLButtonElement;
 let audioDiv: HTMLDivElement;
 let chatTextDiv: HTMLDivElement;
 
@@ -7,33 +8,67 @@ let currentUserSpeechDiv: HTMLDivElement;
 let currentBotSpeechDiv: HTMLDivElement;
 let currentSpeaker = ''; // 'user' or 'bot'
 
+//
+
+export async function setupJoinButton(startBotFn) {
+  console.log('setting up join button');
+  joinButton = document.getElementById('joinButton') as HTMLButtonElement;
+
+  joinButton.addEventListener('click', startBotFn);
+  joinButton.disabled = false;
+
+  const sayHelloButton = document.getElementById('sayHelloButton');
+  sayHelloButton.addEventListener('click', async () => {
+    try {
+      await rtviClient.action({
+        service: "tts",
+        action: "say",
+        arguments: [
+          { name: "text", value: "Hello, world!" },
+          { name: "interrupt", value: false },
+        ],
+      });
+    } catch (e) {
+      console.error(e.message);
+    }
+  });
+
+  sayHelloButton.disabled = false;
+}
+
+export async function disableJoinButton() {
+  joinButton.disabled = true;
+}
+
+//
+
 export async function setupEventHandlers(rtviClient: RTVIClient) {
   audioDiv = document.getElementById('audio') as HTMLDivElement;
   chatTextDiv = document.getElementById('chat-text') as HTMLDivElement;
 
 
   rtviClient.on(RTVIEvent.Connected, () => {
-    console.log("[EVENT] User connected");
+    console.log("-- user connected --");
   });
 
   rtviClient.on(RTVIEvent.Disconnected, () => {
-    console.log("[EVENT] User disconnected");
+    console.log("-- user disconnected --");
   });    
 
   rtviClient.on(RTVIEvent.BotConnected, () => {
-    console.log("[EVENT] Bot connected");
+    console.log("-- bot connected --");
   });
 
   rtviClient.on(RTVIEvent.BotDisconnected, () => {
-    console.log("[EVENT] Bot disconnected");
+    console.log("--bot disconnected --");
   });
 
   rtviClient.on(RTVIEvent.BotReady, () => {
-    console.log("[EVENT] Bot ready to chat!");
+    console.log("-- bot ready to chat! --");
   });
 
   rtviClient.on(RTVIEvent.TrackStarted, (track: MediaStreamTrack, participant: Participant) => {
-    console.log("[EVENT] Track started", participant, track);
+    console.log(" --> track started", participant, track);
     if (participant.local) {
       return;
     }
@@ -59,10 +94,16 @@ export async function setupEventHandlers(rtviClient: RTVIClient) {
     }
   });
 
-  rtviClient.on(RTVIEvent.BotTtsText, handleBotStreamedText);
+  rtviClient.on(RTVIEvent.BotTtsText, handleBotStreamedVoiceText);
+
+  rtviClient.on(RTVIEvent.BotTranscript, handleBotLLMText);
 
   rtviClient.on(RTVIEvent.Error, (message: RTVIMessage) => {
-    console.log("[EVENT] Bot error!", message);
+    console.log("[EVENT] RTVI Error!", message.error);
+  });
+
+  rtviClient.on(RTVIEvent.MessageError, (message: RTVIMessage) => {
+    console.log("[EVENT] RTVI ErrorMessage error!", message.error);
   });
 
   rtviClient.on(RTVIEvent.Metrics, (data) => {
@@ -74,10 +115,6 @@ export async function setupEventHandlers(rtviClient: RTVIClient) {
     data.ttfb.map((metric) => {
       console.log(`[METRICS] ${metric.processor} ttfb: ${metric.value}`);
     });
-  });
-
-  rtviClient.on(RTVIEvent.BotTranscript, (text: BotLLMTextData) => {
-    console.log('bot text from llm prior to tts:', text);
   });
 }
 
@@ -123,22 +160,17 @@ async function startBotSpeechBubble() {
 
 async function finishBotSpeechBubble() {
   console.log('-- bot stopped speaking -- ');
-  // noop for now. Could do UI update here.
 }
 
 async function handleUserInterimTranscription(text: string) {
   console.log('interim transcription:', text);
-  // Ignore transcriptions that arrive while the bot is talking.
-  if (currentSpeaker === 'bot') {
+  if (currentSpeaker !== 'user') {
     return;
   }
   let span = currentUserSpeechDiv.querySelector('span:last-of-type');
   span.classList.add('interim');
   span.textContent = text + " ";
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-});
+  scroll();
 }
 
 async function handleUserFinalTranscription(text: string) {
@@ -152,18 +184,23 @@ async function handleUserFinalTranscription(text: string) {
   span.textContent = text + " ";
   let newSpan = document.createElement('span');
   currentUserSpeechDiv.appendChild(newSpan);
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-  });
+  scroll();
 }
 
-async function handleBotStreamedText(text: BotTTSTextData) {
-  console.log('bot streamed text:', text);
+async function handleBotStreamedVoiceText(data: BotTTSTextData) {
+  console.log('bot streamed text:', data.text);
   if (!currentBotSpeechDiv) {
     return;
   }
-  currentBotSpeechDiv.textContent += text.text + " ";
+  currentBotSpeechDiv.textContent += data.text + " ";
+  scroll();
+}
+
+async function handleBotLLMText(data: BotLLMTextData) {
+  console.log('bot llm text:', data.text);
+}
+
+function scroll() {
   window.scrollTo({
     top: document.body.scrollHeight,
     behavior: 'smooth'
