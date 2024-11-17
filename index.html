@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>My Web App</title>
+  <link rel="stylesheet" href="src/styles.css">
+  <script src="src/app.ts" type="module"></script>
+</head>
+
+<body>
+  <button id="joinButton" disabled>Join</button>
+  <button id="sayHelloButton" disabled>Say Hello</button>
+
+  <div id="chat-text"></div>
+
+  <div id="audio"></div>
+
+  <script>
+    function setup_join_button() {
+      console.log('setting up join button');
+      joinButton = document.getElementById('joinButton');
+
+      joinButton.addEventListener('click', (e) => window.start_bot(e));
+      joinButton.disabled = false;
+
+      const sayHelloButton = document.getElementById('sayHelloButton');
+      sayHelloButton.addEventListener('click', async () => {
+        try {
+          await rtviClient.action({
+            service: "tts",
+            action: "say",
+            arguments: [
+              { name: "text", value: "Hello, world!" },
+              { name: "interrupt", value: false },
+            ],
+          });
+        } catch (e) {
+          console.error(e.message);
+        }
+      });
+
+      sayHelloButton.disabled = false;
+    }
+
+    setup_join_button();
+  </script>
+</body>
+
+</html>
