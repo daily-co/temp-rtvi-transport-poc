@@ -19,7 +19,7 @@ The code is intended as a proof-of-concept for implementing "transports" for the
 The application code is all in two files:
 
   - [index.html](./index.html)
-  - [src/app.ts](./src/app.ts). 
+  - [src/app.ts](./src/app.ts)
 
 A very basic (not production-ready) transport implementation for the OpenAI Realtime API is in [src/openai-websocket-transport.ts](./src/openai-websocket-transport.ts)
 
