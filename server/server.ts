@@ -13,6 +13,12 @@ app.use(bodyParser.json());
 // Parse JSON bodies
 app.use(express.json());
 
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
+
 const payload = {
   bot_profile: "voice_2024_10",
   max_duration: 300,

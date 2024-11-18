@@ -1,7 +1,7 @@
 {
   "name": "1116",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server/server.ts",
   "scripts": {
     "dev:frontend": "vite",
     "dev:backend": "ts-node-dev server/server.ts",
