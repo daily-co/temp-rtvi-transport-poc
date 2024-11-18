@@ -8,8 +8,21 @@
 </head>
 
 <body>
-  <button id="joinButton" disabled>Join</button>
-  <button id="sayHelloButton" disabled>Say Hello</button>
+  <div id="join-div">
+    <p>
+      Click <a role="button" id="start-daily-transport-session">here</a> to start a WebRTC session with Gemini Flash 1.5.
+      STT is Deepgram. TTS is Cartesia. WebRTC is routed through Daily SFUs to a Pipecat process running in a Daily k8s cluster
+      on AWS.
+    </p>
+    <p>
+      Click <a role="botton" id="start-websocket-transport-session">here</a> to start a WebSocket session connecting
+      directly to OpenAI's Realtime API. (API key is exposed on the client, etc etc.)
+    </p>
+    <p>
+      Open the Console to see transport events.
+    </p>
+    
+  </div>
 
   <div id="chat-text"></div>
 
