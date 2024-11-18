@@ -6,6 +6,9 @@
 ```
 npm i
 npm run dev
+
+cp env.example .env
+# now add API keys to .env
 ```
 
 Open [http://localhost:5173/](http://localhost:5173/)
