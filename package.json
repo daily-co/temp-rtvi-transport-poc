@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "ts-node-dev server/index.ts",
+    "dev:backend": "ts-node-dev server/server.ts",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "vite build",
     "preview": "vite preview"
