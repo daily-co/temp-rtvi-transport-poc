@@ -1,4 +1,5 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const path = require('path');
 const morgan = require('morgan');  // Optional, but helpful for seeing API requests
 require('dotenv').config();
@@ -6,8 +7,8 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Request logging
 app.use(morgan('dev'));
+app.use(bodyParser.json());
 
 // Parse JSON bodies
 app.use(express.json());
@@ -34,17 +35,7 @@ const payload = {
       service: "llm",
       options: [
         { name: "model", value: "gemini-1.5-flash-latest" },
-        {
-          name: "initial_messages",
-          value: [
-            {
-              role: "system",
-              content:
-                "You are a helpful assistant. Your name is ExampleBot. Keep responses brief and legible. Your responses will be converted to audio, so avoid using special characters or formatting. Please do use normal punctuation at the end of a sentence.",
-            },
-            { role: "user", content: "Hello, ExampleBot!" },
-          ]
-        },
+        { name: "initial_messages", value: [] },
         { name: "run_on_config", value: true },
       ]
     }
@@ -53,8 +44,29 @@ const payload = {
 
 app.post('/api/connect', async (req, res) => {
   try {
-    console.log('POST /api/connect', payload);
-    
+    const llmService = payload.config.find(service => service.service === "llm");
+    if (!llmService) {
+      throw new Error('LLM service not found in payload');
+    }
+    Object.entries(req.body).forEach(([key, value]) => {
+      const optionIndex = llmService.options.findIndex(
+        option => option.name === key
+      );
+      if (optionIndex === -1) {
+        // @ts-ignore
+        llmService.options.push({ name: key, value });
+      } else {
+        // @ts-ignore
+        llmService.options[optionIndex].value = value;
+      }
+    });
+
+    console.log(
+      'POST /api/connect\n', 
+      // JSON.stringify(payload, null, 2)
+    );
+
+
     const response = await fetch("https://api.daily.co/v1/bots/start", {
       method: "POST",
       headers: {

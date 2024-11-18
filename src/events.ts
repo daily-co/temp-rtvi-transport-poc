@@ -1,3 +1,4 @@
+import { DailyTransport } from "@daily-co/realtime-ai-daily";
 import { RTVIEvent, RTVIMessage, RTVIClient, Participant, TranscriptData, BotTTSTextData, PipecatMetricData, BotLLMTextData } from "realtime-ai";
 
 let joinButton: HTMLButtonElement;
@@ -94,20 +95,22 @@ export async function setupEventHandlers(rtviClient: RTVIClient) {
     }
   });
 
-  rtviClient.on(RTVIEvent.BotTtsText, handleBotStreamedVoiceText);
+  rtviClient.on(RTVIEvent.BotTtsText,
+    // this is a hack: need to make Pipecat pipeline setting for this configurable.
+    (data) => handleBotStreamedVoiceText(data, rtviClient._transport instanceof DailyTransport)
+  );
 
   rtviClient.on(RTVIEvent.BotTranscript, handleBotLLMText);
 
   rtviClient.on(RTVIEvent.Error, (message: RTVIMessage) => {
-    console.log("[EVENT] RTVI Error!", message.error);
+    console.log("[EVENT] RTVI Error!", message);
   });
 
   rtviClient.on(RTVIEvent.MessageError, (message: RTVIMessage) => {
-    console.log("[EVENT] RTVI ErrorMessage error!", message.error);
+    console.log("[EVENT] RTVI ErrorMessage error!", message);
   });
 
   rtviClient.on(RTVIEvent.Metrics, (data) => {
-    // console.log("[EVENT] Metrics", data);
     // let's only print out ttfb for now
     if (! data.ttfb) {
       return;
@@ -175,10 +178,10 @@ async function handleUserInterimTranscription(text: string) {
 
 async function handleUserFinalTranscription(text: string) {
   console.log('final transcription:', text);
-  // Ignore transcriptions that arrive while the bot is talking.
-  if (currentSpeaker === 'bot') {
-    return;
-  }
+  // // Ignore transcriptions that arrive while the bot is talking.
+  // if (currentSpeaker === 'bot') {
+  //   return;
+  // }
   let span = currentUserSpeechDiv.querySelector('span:last-of-type');
   span.classList.remove('interim');
   span.textContent = text + " ";
@@ -187,12 +190,12 @@ async function handleUserFinalTranscription(text: string) {
   scroll();
 }
 
-async function handleBotStreamedVoiceText(data: BotTTSTextData) {
+async function handleBotStreamedVoiceText(data: BotTTSTextData, addSpaces: boolean) {
   console.log('bot streamed text:', data.text);
   if (!currentBotSpeechDiv) {
     return;
   }
-  currentBotSpeechDiv.textContent += data.text + " ";
+  currentBotSpeechDiv.textContent += data.text + (addSpaces ? " " : "");
   scroll();
 }
 
