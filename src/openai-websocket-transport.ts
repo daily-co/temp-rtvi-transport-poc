@@ -36,6 +36,9 @@ export class OpenAIWebSocketTransport extends Transport {
       this._callbacks = options.callbacks ?? {};
       this._onMessage = messageHandler;
 
+      this.state = "initializing";
+      this._callbacks.onTransportStateChanged?.(this.state);
+
       this._wavRecorder = new WavRecorder({ sampleRate: 24000 })
       this._wavStreamPlayer = new WavStreamPlayer({ sampleRate: 24000 });
       this._openai = new RealtimeClient({
@@ -44,7 +47,8 @@ export class OpenAIWebSocketTransport extends Transport {
       });
       this.attachEventListeners();
 
-      console.debug("[RTVI Transport] Initialized");
+      this.state = "initialized";
+      this._callbacks.onTransportStateChanged?.(this.state);
     }
 
     async initDevices() {
@@ -58,7 +62,11 @@ export class OpenAIWebSocketTransport extends Transport {
       abortController: AbortController
     ) {
       console.log('-- OpenAIWebSocketTransport connect --');
+
+      this.state = "connecting";
+      this._callbacks.onTransportStateChanged?.(this.state);
       await this._openai.connect();
+
       // Support only OpenAI's built-in phrase endpointing for now
       this._openai.updateSession({
         turn_detection: { type: 'server_vad', silence_duration_ms: 700 },
@@ -89,19 +97,14 @@ export class OpenAIWebSocketTransport extends Transport {
 
       // Kick off async audio input using the OpenAI WavRecorder utility
       this.startInputAudioWorker();
-
-      this._openai.sendUserMessageContent([
-        {
-          type: `input_text`,
-          text: `Hello!`,
-          // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
-        },
-      ]);
+      this.state = "connected";
+      this._callbacks.onTransportStateChanged?.(this.state);
+      this._callbacks.onConnected?.();
     }
 
     async sendReadyMessage(): Promise<void> {
-      console.log('-- OpenAIWebSocketTransport sendReadyMessage --');
-      // noop in this transport
+      this.state = "ready";
+      this._callbacks.onTransportStateChanged?.(this.state);
     }
 
 
@@ -177,6 +180,7 @@ export class OpenAIWebSocketTransport extends Transport {
       // Audio playout
       client.on('conversation.updated', async ({ item, delta }: any) => {
         const items = client.conversation.getItems();
+        console.log("conversation transport state", this.state);
         if (delta?.audio) {
           this._wavStreamPlayer.add16BitPCM(delta.audio, item.id);
         }
@@ -188,6 +192,18 @@ export class OpenAIWebSocketTransport extends Transport {
     }
 
     private async startInputAudioWorker() {
-      await this._wavRecorder.record((data) => this._openai.appendInputAudio(data.mono));
-    }
+      await this._wavRecorder.record((data) => {
+        if (this.state === "ready") {
+          try {
+            this._openai.appendInputAudio(data.mono);
+          } catch (error) {
+            console.error('Error adding audio to stream player', error);
+            this.state = "error";
+            this._callbacks.onTransportStateChanged?.(this.state);
+            // todo: should check this error more carefully, implement disconnect, implement
+            // ping/ack connection monitoring and reconnection logic, etc.
+          }
+        }
+      });
+  }
 }
