@@ -12,6 +12,7 @@ import {
   BotLLMTextData 
 } from "realtime-ai";
 import { join } from "path";
+import { profile } from "console";
 
 //
 //
@@ -27,26 +28,32 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('start-websocket-transport-session').addEventListener('click', () => {
     startBot('openai');
   });
+  document.getElementById('start-smart-endpointing-session').addEventListener('click', () => {
+    startBot('natural-conversation');
+  });
 });
 
 //
 //
 //
 
-async function startBot(transportChoice: string) {
+async function startBot(profileChoice: string) {
   let transport: Transport;
 
   joinDiv.textContent = 'Joining...';
 
 
-  if (transportChoice === 'daily') {
+  if (profileChoice === 'daily') {
     console.log('-- starting bot with Daily transport --');
     transport = new DailyTransport();
-  } else if (transportChoice === 'openai') {
+  } else if (profileChoice === 'openai') {
     console.log('-- starting bot with OpenAI WebSocket transport --');
     transport = new OpenAIWebSocketTransport();
+  } else if (profileChoice === 'natural-conversation') {
+    console.log('-- starting bot with Natural Conversation transport --');
+    transport = new DailyTransport();
   } else {
-    console.error('Unknown transport choice:', transportChoice);
+    console.error('Unknown profile choice:', profileChoice);
     return;
   }
 
@@ -55,14 +62,17 @@ async function startBot(transportChoice: string) {
     params: {
       baseUrl: "api", // not currently used for OpenAI transport
       requestData: {
+        natural_conversation: (profileChoice === "natural-conversation"),
+        llm_service_options: {
         initial_messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful assistant. Your name is ExampleBot. Keep responses brief and legible. Your responses will be converted to audio, so avoid using special characters or formatting. Please do use normal punctuation at the end of a sentence.",
-          },
-          { role: "user", content: "Hello, ExampleBot!" },
-        ]
+            {
+              role: "system",
+              content:
+                "You are a helpful assistant. Your name is ExampleBot. Keep responses brief and legible. Your responses will be converted to audio, so avoid using special characters or formatting. Please do use normal punctuation at the end of a sentence.",
+            },
+            { role: "user", content: "Hello, ExampleBot!" },
+          ]
+        }
       }
     },
     enableMic: true,

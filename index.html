@@ -10,8 +10,10 @@
 <body>
   <div id="join-div">
     <p>
-      Click <a role="button" id="start-daily-transport-session">here</a> to start a WebRTC session with Gemini Flash 1.5.
-      STT is Deepgram. TTS is Cartesia. WebRTC is routed through Daily SFUs to a Pipecat process running in a Daily k8s cluster
+      Click <a role="button" id="start-daily-transport-session">here</a> to start a WebRTC session with Gemini Flash
+      1.5.
+      STT is Deepgram. TTS is Cartesia. WebRTC is routed through Daily SFUs to a Pipecat process running in a Daily k8s
+      cluster
       on AWS.
     </p>
     <p>
@@ -19,9 +21,17 @@
       directly to OpenAI's Realtime API. (API key is exposed on the client, etc etc.)
     </p>
     <p>
+      Click <a role="botton" id="start-smart-endpointing-session">here</a> to start a session that instantiates a
+      parallel inference pipeline for phrase endpointing. Pipecat's VAD silence interval is set to 0.3 seconds,
+      which would be too short for most use cases without the LLM-as-a-judge approach layered on top of the VAD.
+      We get fast response times when the LLM is confident that the user has finished
+      speaking. There is a 4s timeout to ensure that if the judge LLM returns a false negative, the LLM still
+      begins a response in a reasonable amount of time.
+    </p>
+    <p>
       Open the Console to see transport events.
     </p>
-    
+
   </div>
 
   <div id="chat-text"></div>

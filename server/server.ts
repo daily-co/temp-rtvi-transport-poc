@@ -19,7 +19,36 @@ app.use((req, res, next) => {
   next();
 });
 
-const payload = {
+const natural_conversation_payload = {
+  bot_profile: "natural_conversation_2024_11",
+  max_duration: 300,
+  api_keys: {
+    openai: process.env.OPENAI_API_KEY,
+  },
+  services: {
+    stt: "deepgram",
+    llm: "anthropic",
+    tts: "elevenlabs",
+  },
+  config: [
+    {
+      service: "vad",
+      options: [
+        { name: "params", value: { stop_secs: 0.3 } }
+      ]
+    },
+    {
+      service: "llm",
+      options: [
+        { name: "initial_messages", value: [] },
+        { name: "run_on_config", value: true },
+      ]
+    }
+  ]
+  
+}
+
+const gemini_payload = {
   bot_profile: "voice_2024_10",
   max_duration: 300,
   api_keys: {
@@ -50,11 +79,16 @@ const payload = {
 
 app.post('/api/connect', async (req, res) => {
   try {
+    //let payload = gemini_payload;
+    console.log('--> req.body', req.body);
+
+    let payload = req.body.natural_conversation ? natural_conversation_payload : gemini_payload
+
     const llmService = payload.config.find(service => service.service === "llm");
     if (!llmService) {
       throw new Error('LLM service not found in payload');
     }
-    Object.entries(req.body).forEach(([key, value]) => {
+    Object.entries(req.body.llm_service_options).forEach(([key, value]) => {
       const optionIndex = llmService.options.findIndex(
         option => option.name === key
       );
